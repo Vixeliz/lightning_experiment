@@ -12,4 +12,4 @@ bevy_prototype_debug_lines = "0.10.1"
 bevy_prototype_lyon = "0.8.0"
 bracket-noise = "0.8.7"
 rand = "0.8.5"
-bevy_vinox_pixel = {path = "../bevy_vinox_pixel"}
+bevy_vinox_pixel = {git = "https://github.com/vixeliz/bevy_vinox_pixel"}

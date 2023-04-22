@@ -987,6 +987,7 @@ dependencies = [
 [[package]]
 name = "bevy_vinox_pixel"
 version = "0.1.0"
+source = "git+https://github.com/vixeliz/bevy_vinox_pixel#896bd22b5a1fe90b9ab17993476943575d77fd6e"
 dependencies = [
  "bevy",
  "rand",

@@ -285,10 +285,12 @@ fn add_lightning(
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn(TexturePixelCamera::new(
-        UVec2::new(512, 512),
-        None,
-        Color::BLACK,
+    commands.spawn((
+        TexturePixelCamera::new(UVec2::new(512, 512), None, Color::BLACK, true),
+        BloomSettings {
+            intensity: 0.5, // the default is 0.3
+            ..default()
+        },
     ));
 
     // commands.spawn((
