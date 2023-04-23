@@ -88,14 +88,14 @@ impl Lightning {
         for i in 1..(self.points.len() - 1) {
             let n = (self.points[i] - (self.points[i - 1] + self.points[i + 1]) * 0.5)
                 .normalize_or_zero();
-            let v = n * meander_amount * rand::thread_rng().gen::<f32>() * dt;
+            let v = n * meander_amount * rand::thread_rng().gen_range(0.0..1.0) * dt;
             self.points[i] += v;
         }
         // close
         for i in 1..(self.points.len() - 1) {
             let p = (self.points[i - 1] + self.points[i + 1]) * 0.5;
             let n = p - self.points[i];
-            let v = n * close_amount * rand::thread_rng().gen::<f32>() * dt;
+            let v = n * close_amount * rand::thread_rng().gen_range(0.0..1.0) * dt;
             self.points[i] += v;
         }
 
@@ -182,7 +182,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugin(DebugLinesPlugin::default())
         .add_plugins(PixelPlugins)
-        .add_plugin(PixelCursorPlugin)
+        // .add_plugin(PixelCursorPlugin)
         .add_plugin(EguiPlugin)
         .insert_resource(LightningSettings::default())
         .insert_resource(LastPoint::default())
@@ -197,10 +197,12 @@ fn draw(query: Query<&Lightning>, mut lines: ResMut<DebugLines>) {
         for point in lightning.points.windows(2) {
             let s = 2.0;
             lines.line_colored(
-                point[0].extend(-1000.0),
-                point[1].extend(-1000.0),
+                point[0].extend(0.0),
+                point[1].extend(0.0),
                 0.0,
-                Color::rgba(s * 0.5, s * 0.7, s, 1.0),
+                Color::rgba(s * 0.4, s * 0.6, s, 1.0),
+                // Color::rgba(s * 0.1, s * 0.9, s * 0.3, 1.0),
+                // Color::rgba(s, s, s, 1.0),
             );
         }
     }
@@ -286,43 +288,44 @@ fn add_lightning(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // commands.spawn((TexturePixelCamera::new(UVec2::new(512, 512), None, Color::BLACK, false)));
+    // commands.spawn((
+    //     TexturePixelCamera::new(UVec2::new(256, 256), None, Color::BLACK, true),
     //     BloomSettings {
-    //         intensity: 0.5, // the default is 0.3
+    //         intensity: 0.4, // the default is 0.3
     //         ..default()
     //     },
     // ));
 
-    commands.spawn(PixelCursor::new(
-        asset_server.load("cursor.png"),
-        asset_server.load("cursor_hover.png"),
-    ));
-    let scaled_projection = ScaledPixelProjection {
-        zoom: 4.0,
-        hdr: true,
-        ..Default::default()
-    };
+    // commands.spawn(PixelCursor::new(
+    //     asset_server.load("cursor.png"),
+    //     asset_server.load("cursor_hover.png"),
+    // ));
+    // let scaled_projection = ScaledPixelProjection {
+    //     zoom: 4.0,
+    //     hdr: true,
+    //     ..Default::default()
+    // };
+    // commands.spawn((
+    //     ScaledPixelCamera::new(scaled_projection),
+    //     BloomSettings {
+    //         intensity: 0.5,
+    //         ..default()
+    //     },
+    // ));
+
     commands.spawn((
-        ScaledPixelCamera::new(scaled_projection),
+        Camera2dBundle {
+            camera: Camera {
+                hdr: true,
+                ..default()
+            },
+            ..default()
+        },
         BloomSettings {
-            intensity: 0.5,
+            intensity: 0.5, // the default is 0.3
             ..default()
         },
     ));
-
-    // commands.spawn((
-    //     Camera2dBundle {
-    //         camera: Camera {
-    //             hdr: true,
-    //             ..default()
-    //         },
-    //         ..default()
-    //     },
-    //     BloomSettings {
-    //         intensity: 0.5, // the default is 0.3
-    //         ..default()
-    //     },
-    // ));
     let segments = 10;
     for i in 0..segments {
         let angle = (i as f32 / segments as f32) * std::f32::consts::PI * 2.0;
