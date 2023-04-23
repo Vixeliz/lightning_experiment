@@ -1,4 +1,4 @@
-use bevy_vinox_pixel::prelude::*;
+use bevy_vinox_pixel::{camera::scaled::ScaledPixelProjection, prelude::*};
 use std::time::Duration;
 
 use bevy::{
@@ -182,11 +182,12 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugin(DebugLinesPlugin::default())
         .add_plugins(PixelPlugins)
+        .add_plugin(PixelCursorPlugin)
         .add_plugin(EguiPlugin)
         .insert_resource(LightningSettings::default())
         .insert_resource(LastPoint::default())
         .add_startup_system(setup)
-        .add_systems((draw, lightning, lightning_ui, add_lightning))
+        .add_systems((lightning, lightning_ui, add_lightning, draw))
         .insert_resource(ClearColor(Color::BLACK))
         .run();
 }
@@ -196,8 +197,8 @@ fn draw(query: Query<&Lightning>, mut lines: ResMut<DebugLines>) {
         for point in lightning.points.windows(2) {
             let s = 2.0;
             lines.line_colored(
-                point[0].extend(0.0),
-                point[1].extend(0.0),
+                point[0].extend(-1000.0),
+                point[1].extend(-1000.0),
                 0.0,
                 Color::rgba(s * 0.5, s * 0.7, s, 1.0),
             );
@@ -284,11 +285,27 @@ fn add_lightning(
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // commands.spawn((TexturePixelCamera::new(UVec2::new(512, 512), None, Color::BLACK, false)));
+    //     BloomSettings {
+    //         intensity: 0.5, // the default is 0.3
+    //         ..default()
+    //     },
+    // ));
+
+    commands.spawn(PixelCursor::new(
+        asset_server.load("cursor.png"),
+        asset_server.load("cursor_hover.png"),
+    ));
+    let scaled_projection = ScaledPixelProjection {
+        zoom: 4.0,
+        hdr: true,
+        ..Default::default()
+    };
     commands.spawn((
-        TexturePixelCamera::new(UVec2::new(512, 512), None, Color::BLACK, true),
+        ScaledPixelCamera::new(scaled_projection),
         BloomSettings {
-            intensity: 0.5, // the default is 0.3
+            intensity: 0.5,
             ..default()
         },
     ));
