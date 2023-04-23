@@ -1,14 +1,8 @@
-use bevy_vinox_pixel::{camera::scaled::ScaledPixelProjection, prelude::*};
-use std::time::Duration;
-
 use bevy::{
-    core_pipeline::{bloom::BloomSettings, clear_color::ClearColorConfig},
-    prelude::*,
-    utils::FloatOrd,
-    window::PrimaryWindow,
+    core_pipeline::bloom::BloomSettings, prelude::*, utils::FloatOrd, window::PrimaryWindow,
 };
 use bevy_egui::*;
-use bevy_prototype_debug_lines::*;
+use bevy_prototype_lyon::prelude::*;
 use rand::Rng;
 // Using this instead of noise-rs because of speed
 use bracket_noise::prelude::*;
@@ -55,9 +49,6 @@ impl Lightning {
             .map(|u| end * (1. - u) + start * u)
             .collect();
 
-        // let mut points = Vec::new();
-        // points.push(start);
-        // points.push(end);
         Self { points, seed }
     }
 
@@ -178,33 +169,34 @@ impl Lightning {
 
 fn main() {
     App::new()
-        // .add_plugins(DefaultPlugins)
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_plugin(DebugLinesPlugin::default())
-        .add_plugins(PixelPlugins)
-        // .add_plugin(PixelCursorPlugin)
+        .add_plugins(DefaultPlugins)
+        .add_plugin(ShapePlugin)
         .add_plugin(EguiPlugin)
         .insert_resource(LightningSettings::default())
         .insert_resource(LastPoint::default())
         .add_startup_system(setup)
-        .add_systems((lightning, lightning_ui, add_lightning, draw))
+        .add_systems((lightning, lightning_ui, add_lightning.after(draw), draw))
         .insert_resource(ClearColor(Color::BLACK))
         .run();
 }
 
-fn draw(query: Query<&Lightning>, mut lines: ResMut<DebugLines>) {
-    for lightning in query.iter() {
+fn draw(mut commands: Commands, query: Query<(&Lightning, Entity)>) {
+    for (lightning, entity) in query.iter() {
+        let mut path_builder = PathBuilder::new();
         for point in lightning.points.windows(2) {
-            let s = 2.0;
-            lines.line_colored(
-                point[0].extend(0.0),
-                point[1].extend(0.0),
-                0.0,
-                Color::rgba(s * 0.4, s * 0.6, s, 1.0),
-                // Color::rgba(s * 0.1, s * 0.9, s * 0.3, 1.0),
-                // Color::rgba(s, s, s, 1.0),
-            );
+            path_builder.move_to(point[0]);
+            path_builder.line_to(point[1]);
         }
+        let s = 2.0;
+        let path = path_builder.build();
+        commands.entity(entity).insert((
+            ShapeBundle {
+                path,
+                transform: Transform::from_xyz(0., 0.0, 0.),
+                ..default()
+            },
+            Stroke::new(Color::rgba(s * 0.4, s * 0.6, s, 1.0), 1.0),
+        ));
     }
 }
 
@@ -287,32 +279,7 @@ fn add_lightning(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    // commands.spawn((
-    //     TexturePixelCamera::new(UVec2::new(256, 256), None, Color::BLACK, true),
-    //     BloomSettings {
-    //         intensity: 0.4, // the default is 0.3
-    //         ..default()
-    //     },
-    // ));
-
-    // commands.spawn(PixelCursor::new(
-    //     asset_server.load("cursor.png"),
-    //     asset_server.load("cursor_hover.png"),
-    // ));
-    // let scaled_projection = ScaledPixelProjection {
-    //     zoom: 4.0,
-    //     hdr: true,
-    //     ..Default::default()
-    // };
-    // commands.spawn((
-    //     ScaledPixelCamera::new(scaled_projection),
-    //     BloomSettings {
-    //         intensity: 0.5,
-    //         ..default()
-    //     },
-    // ));
-
+fn setup(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             camera: Camera {
@@ -335,12 +302,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             (i as u32).wrapping_add(rand::thread_rng().gen_range(0..u32::MAX)),
         ),));
     }
-
-    // commands.spawn(Lightning::new(
-    //     Vec2::new(0.0, 0.0),
-    //     Vec2::new(100.0, 0.0),
-    //     1,
-    // ));
 }
 
 fn lightning_ui(mut egui_context: EguiContexts, mut lightning_settings: ResMut<LightningSettings>) {
